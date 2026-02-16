@@ -4,6 +4,7 @@ import burp.api.montoya.MontoyaApi;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.ui.contextmenu.ContextMenuEvent;
 import burp.api.montoya.ui.contextmenu.ContextMenuItemsProvider;
+import schodan.ui.MainUITab;
 import schodan.utils.RepeaterIntegration;
 
 import javax.swing.*;
@@ -17,10 +18,15 @@ import java.util.List;
 public class ContextMenuHandler implements ContextMenuItemsProvider {
     private final MontoyaApi montoyaApi;
     private final RepeaterIntegration repeaterIntegration;
+    private MainUITab mainUITab;
 
     public ContextMenuHandler(MontoyaApi montoyaApi) {
         this.montoyaApi = montoyaApi;
         this.repeaterIntegration = new RepeaterIntegration(montoyaApi);
+    }
+    
+    public void setMainUITab(MainUITab mainUITab) {
+        this.mainUITab = mainUITab;
     }
 
     /**
@@ -46,6 +52,12 @@ public class ContextMenuHandler implements ContextMenuItemsProvider {
             JMenuItem sendToRepeaterItem = new JMenuItem("Send to Repeater");
             sendToRepeaterItem.addActionListener(l -> sendToRepeater(event));
             extensionMenu.add(sendToRepeaterItem);
+
+            extensionMenu.addSeparator();
+
+            JMenuItem sendToExtensionItem = new JMenuItem("Send to Extension");
+            sendToExtensionItem.addActionListener(l -> sendToExtension(event));
+            extensionMenu.add(sendToExtensionItem);
 
             items.add(extensionMenu);
         } catch (Exception e) {
@@ -86,6 +98,30 @@ public class ContextMenuHandler implements ContextMenuItemsProvider {
             }
         } catch (Exception e) {
             montoyaApi.logging().logToError("Error sending to Repeater: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Sends the selected request/response to the extension UI tab.
+     */
+    private void sendToExtension(ContextMenuEvent event) {
+        try {
+            HttpRequestResponse rr = getSelectedRequestResponse(event);
+            if (rr == null) {
+                montoyaApi.logging().logToOutput("[Send to Extension] No request/response in this context.");
+                return;
+            }
+            
+            if (mainUITab != null) {
+                mainUITab.setRequestResponse(rr);
+                mainUITab.appendLog("[CONTEXT MENU] Request sent to extension:\n" + 
+                    "Method: " + rr.request().method() + "\n" +
+                    "URL: " + rr.request().url() + "\n");
+            } else {
+                montoyaApi.logging().logToOutput("[Send to Extension] UI tab not available.");
+            }
+        } catch (Exception e) {
+            montoyaApi.logging().logToError("Error sending to Extension: " + e.getMessage());
         }
     }
 

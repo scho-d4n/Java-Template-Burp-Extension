@@ -12,6 +12,7 @@ import burp.api.montoya.proxy.http.ProxyRequestToBeSentAction;
 import burp.api.montoya.proxy.http.ProxyResponseHandler;
 import burp.api.montoya.proxy.http.ProxyResponseReceivedAction;
 import burp.api.montoya.proxy.http.ProxyResponseToBeSentAction;
+import schodan.ui.MainUITab;
 
 /**
  * Intercepts requests and responses from the Proxy.
@@ -21,9 +22,14 @@ import burp.api.montoya.proxy.http.ProxyResponseToBeSentAction;
  */
 public class ProxyInterceptionHandler implements ProxyRequestHandler, ProxyResponseHandler {
     private final MontoyaApi montoyaApi;
+    private MainUITab mainUITab;
 
     public ProxyInterceptionHandler(MontoyaApi montoyaApi) {
         this.montoyaApi = montoyaApi;
+    }
+    
+    public void setMainUITab(MainUITab mainUITab) {
+        this.mainUITab = mainUITab;
     }
 
     /**
@@ -38,6 +44,18 @@ public class ProxyInterceptionHandler implements ProxyRequestHandler, ProxyRespo
                 ann = ann.withNotes("Client sent X-Debug");
                 ann = ann.withHighlightColor(HighlightColor.YELLOW);
             }
+            
+            // Log to UI tab if URL matches filter
+            if (mainUITab != null) {
+                String url = interceptedRequest.url().toString();
+                if (mainUITab.matchesUrlFilter(url)) {
+                    mainUITab.appendLog("[PROXY LISTENER] A request was intercepted: " + url + "\n" +
+                        "Host: " + interceptedRequest.httpService().host() + "\n" +
+                        "Port: " + interceptedRequest.httpService().port() + "\n" +
+                        "Protocol: " + (interceptedRequest.httpService().secure() ? "https" : "http"));
+                }
+            }
+            
             return ProxyRequestReceivedAction.continueWith(interceptedRequest, ann);
 
         } catch (Exception e) {

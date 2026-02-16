@@ -12,15 +12,21 @@ import burp.api.montoya.http.Http;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
 import burp.api.montoya.http.message.responses.HttpResponse;
+import schodan.ui.MainUITab;
 
 /**
  * Basic Active Scan check for missing X-Frame-Options header.
  */
 public class ActiveScanCheckExample implements ActiveScanCheck {
     private final MontoyaApi montoyaApi;
+    private MainUITab mainUITab;
 
     public ActiveScanCheckExample(MontoyaApi montoyaApi) {
         this.montoyaApi = montoyaApi;
+    }
+    
+    public void setMainUITab(MainUITab mainUITab) {
+        this.mainUITab = mainUITab;
     }
 
     @Override
@@ -56,6 +62,13 @@ public class ActiveScanCheckExample implements ActiveScanCheck {
                         AuditIssueSeverity.LOW,
                         baseRequestResponse
                 );
+                
+                // Log to UI tab if available
+                if (mainUITab != null) {
+                    mainUITab.appendLog("[ACTIVE SCAN CHECK] Missing X-Frame-Options header found\n" +
+                        "URL: " + baseRequestResponse.request().url() + "\n");
+                }
+                
                 return AuditResult.auditResult(issue);
             }
             return AuditResult.auditResult();

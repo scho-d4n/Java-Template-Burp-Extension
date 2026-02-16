@@ -33,12 +33,18 @@ public class TemplateExtension implements BurpExtension, ExtensionUnloadingHandl
         try {
             montoyaApi.extension().setName(EXTENSION_NAME);
 
+            // Add a main UI tab first (needed by handlers)
+            MainUITab mainUITab = new MainUITab(montoyaApi);
+            uiTabReg = montoyaApi.userInterface().registerSuiteTab(EXTENSION_NAME, mainUITab);
+
             // Intercept requests from any tool (Proxy, Repeater, Scanner, Intruder, etc.)
             HttpTrafficHandler httpHandler = new HttpTrafficHandler(montoyaApi);
+            httpHandler.setMainUITab(mainUITab);
             httpHandlerReg = montoyaApi.http().registerHttpHandler(httpHandler);
 
             // Intercept requests from Proxy
             ProxyInterceptionHandler proxyHandler = new ProxyInterceptionHandler(montoyaApi);
+            proxyHandler.setMainUITab(mainUITab);
             proxyRequestHandlerReg = montoyaApi.proxy().registerRequestHandler(proxyHandler);
             proxyResponseHandlerReg = montoyaApi.proxy().registerResponseHandler(proxyHandler);
 
@@ -48,22 +54,24 @@ public class TemplateExtension implements BurpExtension, ExtensionUnloadingHandl
 
             // Handle scan results
             ScanResultsHandler scanResultsHandler = new ScanResultsHandler(montoyaApi);
+            ActiveScanCheckExample activeScanCheck = new ActiveScanCheckExample(montoyaApi);
+            activeScanCheck.setMainUITab(mainUITab);
             activeScanCheckReg = montoyaApi.scanner().registerActiveScanCheck(
-                    new ActiveScanCheckExample(montoyaApi),
+                    activeScanCheck,
                     burp.api.montoya.scanner.scancheck.ScanCheckType.PER_INSERTION_POINT
             );
+            PassiveScanCheckExample passiveScanCheck = new PassiveScanCheckExample(montoyaApi);
+            passiveScanCheck.setMainUITab(mainUITab);
             passiveScanCheckReg = montoyaApi.scanner().registerPassiveScanCheck(
-                    new PassiveScanCheckExample(montoyaApi),
+                    passiveScanCheck,
                     burp.api.montoya.scanner.scancheck.ScanCheckType.PER_REQUEST
             );
             auditIssueHandlerReg = montoyaApi.scanner().registerAuditIssueHandler(scanResultsHandler);
 
-            // Add a main UI tab
-            MainUITab mainUITab = new MainUITab(montoyaApi);
-            uiTabReg = montoyaApi.userInterface().registerSuiteTab(EXTENSION_NAME, mainUITab);
-
             // Add a context menu
-            contextMenuReg = montoyaApi.userInterface().registerContextMenuItemsProvider(new ContextMenuHandler(montoyaApi));
+            ContextMenuHandler contextMenuHandler = new ContextMenuHandler(montoyaApi);
+            contextMenuHandler.setMainUITab(mainUITab);
+            contextMenuReg = montoyaApi.userInterface().registerContextMenuItemsProvider(contextMenuHandler);
 
             // Add a settings panel (handler holds panel + getters for use elsewhere)
             SettingsPanelHandler settingsPanelHandler = new SettingsPanelHandler(montoyaApi);

@@ -8,12 +8,18 @@ import burp.api.montoya.scanner.audit.issues.AuditIssueSeverity;
 import burp.api.montoya.scanner.scancheck.PassiveScanCheck;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.responses.HttpResponse;
+import schodan.ui.MainUITab;
 
 public class PassiveScanCheckExample implements PassiveScanCheck {
     private final MontoyaApi montoyaApi;
+    private MainUITab mainUITab;
 
     public PassiveScanCheckExample(MontoyaApi montoyaApi) {
         this.montoyaApi = montoyaApi;
+    }
+    
+    public void setMainUITab(MainUITab mainUITab) {
+        this.mainUITab = mainUITab;
     }
 
     @Override
@@ -48,6 +54,13 @@ public class PassiveScanCheckExample implements PassiveScanCheck {
                         AuditIssueSeverity.INFORMATION,
                         baseRequestResponse
                 );
+                
+                // Log to UI tab if available
+                if (mainUITab != null) {
+                    mainUITab.appendLog("[SCANNER CHECK] Server header found: " + serverValue + "\n" +
+                        "URL: " + baseRequestResponse.request().url() + "\n");
+                }
+                
                 return AuditResult.auditResult(issue);
             }
             return AuditResult.auditResult();

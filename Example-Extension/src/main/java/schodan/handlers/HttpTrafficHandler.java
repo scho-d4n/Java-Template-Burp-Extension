@@ -10,6 +10,7 @@ import burp.api.montoya.http.handler.HttpResponseReceived;
 import burp.api.montoya.http.handler.ResponseReceivedAction;
 import burp.api.montoya.http.message.HttpRequestResponse;
 import burp.api.montoya.http.message.requests.HttpRequest;
+import schodan.ui.MainUITab;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,9 +21,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
  **/
 public class HttpTrafficHandler implements HttpHandler {
     private final MontoyaApi montoyaApi;
+    private MainUITab mainUITab;
 
     public HttpTrafficHandler(MontoyaApi montoyaApi) {
         this.montoyaApi = montoyaApi;
+    }
+    
+    public void setMainUITab(MainUITab mainUITab) {
+        this.mainUITab = mainUITab;
     }
 
     @Override
@@ -41,6 +47,15 @@ public class HttpTrafficHandler implements HttpHandler {
 
             // ----- Add Headers -----
             HttpRequest updatedRequest = requestToBeSent.withAddedHeader("X-Template-Header", "TemplateExtension");
+            
+            // Log to UI tab if URL matches filter
+            if (mainUITab != null) {
+                String url = requestToBeSent.url().toString();
+                if (mainUITab.matchesUrlFilter(url)) {
+                    mainUITab.appendLog("[HTTP LISTENER] A request was sent/intercepted: " + url);
+                }
+            }
+            
             return RequestToBeSentAction.continueWith(updatedRequest, ann);
 
             
